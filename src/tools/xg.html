@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitter Giveaway Picker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #000;
+            color: white;
+        }
+        h1 {
+            margin-top: 20px;
+            color: #E64A19;
+        }
+        .wheel-container {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            border: 5px solid #E64A19;
+            margin: 40px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            transform: rotate(0deg);
+            transition: transform 5s ease-out;
+            overflow: hidden;
+        }
+
+        .wheel div {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: 50% 50%;
+            text-align: center;
+            font-size: 14px;
+            color: white;
+            line-height: 175px;
+            padding: 0;
+            box-sizing: border-box;
+            clip-path: polygon(50% 50%, 100% 0, 100% 100%);
+        }
+
+        .wheel div span {
+            position: absolute;
+            width: 100px;
+            top: 50%;
+            left: 50%;
+            transform-origin: 50% 50%;
+            transform: rotate(90deg) translateX(-50%);
+            text-align: center;
+            white-space: nowrap;
+            font-weight: bold;
+            font-size: 16px;
+            color: white;
+        }
+
+        .needle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-left: 30px solid transparent;
+            border-right: 30px solid transparent;
+            border-top: 40px solid #E64A19; /* Changed to face inward */
+            transform: translate(-50%, -100%);
+            z-index: 10;
+        }
+
+        button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #E64A19;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        #usernames {
+            width: 80%;
+            margin: 10px auto;
+            padding: 10px;
+            background-color: #333;
+            color: white;
+            border: 1px solid #E64A19;
+        }
+
+        .confetti {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <h1>Twitter Giveaway Picker 🎁</h1>
+
+    <textarea id="usernames" rows="3" placeholder="Enter usernames separated by commas"></textarea>
+    <button onclick="generateWheel()">Generate Wheel</button>
+
+    <div class="wheel-container">
+        <div class="needle"></div>
+        <div class="wheel" id="wheel"></div>
+    </div>
+
+    <button id="spinButton" onclick="spin()">Spin the Wheel</button>
+    <button id="shuffleButton" onclick="shuffleAndSpin()">Shuffle and Spin Again</button> <!-- Shuffle button -->
+
+    <canvas id="confetti" class="confetti"></canvas>
+
+    <script>
+        var usernames = [];
+
+        // Function to generate the wheel
+        function generateWheel() {
+            var input = document.getElementById("usernames").value;
+            usernames = input.split(",").map(name => name.trim());
+
+            if (usernames.length < 2) {
+                alert("Please input at least two usernames.");
+                return;
+            }
+
+            displayWheel(usernames);
+        }
+
+        // Function to shuffle and spin the wheel faster
+        function shuffleAndSpin() {
+            shuffleArray(usernames); // Shuffle the usernames
+            displayWheel(usernames); // Re-display the shuffled wheel
+            spin(true); // Automatically spin after shuffle, faster
+        }
+
+        // Utility function to shuffle array
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+            }
+        }
+
+        // Function to display the wheel
+        function displayWheel(namesArray) {
+            var wheel = document.getElementById("wheel");
+            wheel.innerHTML = ''; // Clear previous wheel
+
+            var sectors = namesArray.length;
+            var colors = ["#f94144", "#f3722c", "#f8961e", "#f9c74f", "#90be6d", "#43aa8b", "#577590", "#277da1"];
+            var angle = 360 / sectors;
+
+            namesArray.forEach(function(name, index) {
+                var rotation = angle * index;
+                var color = colors[index % colors.length];
+                var div = document.createElement("div");
+                div.style.transform = `rotate(${rotation}deg) skewY(-${90 - angle}deg)`;
+                div.style.backgroundColor = color;
+                div.innerHTML = `<span>${name}</span>`;
+                wheel.appendChild(div);
+            });
+        }
+
+        // Function to spin the wheel
+        function spin(faster = false) {
+            if (usernames.length < 2) {
+                alert("Please input usernames and generate the wheel first!");
+                return;
+            }
+
+            var wheel = document.getElementById('wheel');
+            var rotation = Math.floor(Math.random() * 360 + 1800); // Spin at least 5 full rounds
+            var spinSpeed = faster ? 3 : 5; // Spin faster on shuffle
+
+            wheel.style.transition = `transform ${spinSpeed}s ease-out`; // Adjust speed for shuffle
+            wheel.style.transform = 'rotate(' + rotation + 'deg)';
+            var angle = 360 / usernames.length;
+
+            setTimeout(function() {
+                var selectedIndex = Math.floor((rotation % 360) / angle);
+                alert('The winner is: ' + usernames[selectedIndex]);
+                launchConfetti();
+            }, spinSpeed * 1000); // Adjust timeout based on speed
+        }
+
+        // Confetti Animation
+        function launchConfetti() {
+            var canvas = document.getElementById("confetti");
+            var ctx = canvas.getContext("2d");
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            var particles = [];
+            var particleCount = 150;
+            for (var i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    r: Math.random() * 6 + 4,
+                    d: Math.random() * particleCount,
+                    color: "rgba(" + (Math.floor(Math.random() * 255)) + "," + (Math.floor(Math.random() * 255)) + "," + (Math.floor(Math.random() * 255)) + ", 1)",
+                    tilt: Math.random() * 30 - 15
+                });
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (var i = 0; i < particleCount; i++) {
+                    var p = particles[i];
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2, false);
+                    ctx.fillStyle = p.color;
+                    ctx.fill();
+                }
+                update();
+            }
+
+            function update() {
+                for (var i = 0; i < particleCount; i++) {
+                    var p = particles[i];
+                    p.y += Math.cos(p.d) + 1 + p.r / 2;
+                    p.x += Math.sin(p.d);
+                    if (p.y > canvas.height) {
+                        p.y = Math.random() * canvas.height - canvas.height;
+                        p.x = Math.random() * canvas.width;
+                    }
+                }
+            }
+
+            setInterval(draw, 20);
+        }
+    </script>
+</body>
+</html>
